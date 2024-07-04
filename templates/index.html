@@ -74,6 +74,12 @@
                 botMessage.textContent = 'Bot: ' + data.response;
                 chatBox.appendChild(botMessage);
                 chatBox.scrollTop = chatBox.scrollHeight;
+            })
+            .catch(error => {
+                const botMessage = document.createElement('div');
+                botMessage.textContent = 'Bot: Sorry, an error occurred.';
+                chatBox.appendChild(botMessage);
+                chatBox.scrollTop = chatBox.scrollHeight;
             });
 
             document.getElementById('user-input').value = '';
