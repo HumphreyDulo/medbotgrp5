@@ -43,10 +43,12 @@ disease_symptoms = {
     "Diabetes": ["increased thirst", "frequent urination", "fatigue"]
 }
 
+
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'[^\w\s]', '', text)
     return text
+
 
 def get_disease_from_question(question):
     for disease in disease_symptoms.keys():
@@ -54,9 +56,11 @@ def get_disease_from_question(question):
             return disease
     return None
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -73,13 +77,14 @@ def predict():
     text_vector = vectorizer.transform([cleaned_text]).toarray()
     predicted_label = classifier.predict(text_vector)
     predicted_label = label_encoder.inverse_transform([predicted_label.argmax()])[0]
-    
+
     other_symptoms = disease_symptoms.get(predicted_label, [])
     response = f"Based on the symptoms you provided, it is likely that you have {predicted_label}. "
     if other_symptoms:
         response += f"Other common symptoms of {predicted_label} include: {', '.join(other_symptoms)}."
 
     return jsonify({'response': response})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
