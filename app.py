@@ -67,21 +67,40 @@ def predict():
     symptom_description = request.json.get('symptoms')
     cleaned_text = clean_text(symptom_description)
 
-    # Check if the user is asking for symptoms of a specific disease
-    disease_from_question = get_disease_from_question(cleaned_text)
-    if disease_from_question:
-        other_symptoms = disease_symptoms.get(disease_from_question, [])
-        response = f"Possible common symptoms of {disease_from_question} include: {', '.join(other_symptoms)}."
+    # Check if the user is asking for other symptoms of a specific disease
+    if 'other symptoms of' in cleaned_text:
+        disease_name = cleaned_text.split('other symptoms of')[-1].strip()
+        mentioned_symptoms = [symptom.strip() for symptom in re.split(r' and |,', symptom_description.lower())]
+        other_symptoms = disease_symptoms.get(disease_name.title(), [])
+        filtered_symptoms = [symptom for symptom in other_symptoms if symptom not in mentioned_symptoms]
+        if filtered_symptoms:
+            response = f"Other common symptoms of {disease_name.title()} include: {', '.join(filtered_symptoms)}."
+        else:
+            response = f"I don't have additional symptoms information for {disease_name.title()}."
         return jsonify({'response': response})
 
+    # Check if the user is asking for symptoms of a specific disease
+    if 'symptoms of' in cleaned_text:
+        disease_name = cleaned_text.split('symptoms of')[-1].strip()
+        other_symptoms = disease_symptoms.get(disease_name.title(), [])
+        if other_symptoms:
+            response = f"{disease_name.title()} is typically associated with the following symptoms: {', '.join(other_symptoms)}."
+        else:
+            response = f"I don't have information about {disease_name.title()}."
+        return jsonify({'response': response})
+
+    # Check if the user input matches a known disease directly
+    disease_name = cleaned_text.strip().title()
+    if disease_name in disease_symptoms:
+        other_symptoms = disease_symptoms.get(disease_name, [])
+        response = f"{disease_name} is typically associated with the following symptoms: {', '.join(other_symptoms)}."
+        return jsonify({'response': response})
+
+    # Predict the disease based on symptoms
     text_vector = vectorizer.transform([cleaned_text]).toarray()
     predicted_label = classifier.predict(text_vector)
     predicted_label = label_encoder.inverse_transform([predicted_label.argmax()])[0]
-
-    other_symptoms = disease_symptoms.get(predicted_label, [])
-    response = f"Based on the symptoms you provided, it is likely that you have {predicted_label}. "
-    if other_symptoms:
-        response += f"Other common symptoms of {predicted_label} include: {', '.join(other_symptoms)}."
+    response = f'Based on the symptoms you provided, it is likely that you have {predicted_label}.'
 
     return jsonify({'response': response})
 
