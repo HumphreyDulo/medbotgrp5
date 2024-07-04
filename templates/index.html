@@ -7,38 +7,71 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
         .chat-container {
-            width: 300px;
-            margin: auto;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            width: 100%;
+            max-width: 400px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .chat-box {
-            height: 300px;
-            overflow-y: scroll;
-            border: 1px solid #ccc;
-            padding: 10px;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+        .chat-message {
             margin-bottom: 10px;
+        }
+        .chat-message.user {
+            text-align: right;
+        }
+        .chat-message.bot {
+            text-align: left;
+        }
+        .chat-bubble {
+            display: inline-block;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .chat-bubble.user {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .chat-bubble.bot {
+            background-color: #f1f1f1;
+            color: #333;
         }
         .input-box {
             display: flex;
+            padding: 10px;
+            background-color: #fff;
         }
         .input-box input {
             flex: 1;
             padding: 10px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 10px;
+            margin-right: 10px;
         }
         .input-box button {
-            padding: 10px;
+            padding: 10px 20px;
             border: none;
-            background-color: #28a745;
+            background-color: #007bff;
             color: white;
             cursor: pointer;
-            border-radius: 5px;
-            margin-left: 5px;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -53,13 +86,11 @@
 
     <script>
         function sendMessage() {
-            const userInput = document.getElementById('user-input').value;
+            const userInput = document.getElementById('user-input').value.trim();
             if (!userInput) return;
 
             const chatBox = document.getElementById('chat-box');
-            const userMessage = document.createElement('div');
-            userMessage.textContent = 'You: ' + userInput;
-            chatBox.appendChild(userMessage);
+            addMessage('user', userInput);
 
             fetch('/predict', {
                 method: 'POST',
@@ -68,21 +99,40 @@
                 },
                 body: JSON.stringify({ symptoms: userInput })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
-                const botMessage = document.createElement('div');
-                botMessage.textContent = 'Bot: ' + data.response;
-                chatBox.appendChild(botMessage);
+                if (data.error) {
+                    addMessage('bot', data.error);
+                } else {
+                    addMessage('bot', data.response);
+                }
                 chatBox.scrollTop = chatBox.scrollHeight;
             })
             .catch(error => {
-                const botMessage = document.createElement('div');
-                botMessage.textContent = 'Bot: Sorry, an error occurred.';
-                chatBox.appendChild(botMessage);
+                console.error('Error:', error);
+                addMessage('bot', 'Sorry, something went wrong. Please try again.');
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
 
             document.getElementById('user-input').value = '';
+        }
+
+        function addMessage(sender, text) {
+            const chatBox = document.getElementById('chat-box');
+            const messageContainer = document.createElement('div');
+            const messageBubble = document.createElement('div');
+
+            messageContainer.className = `chat-message ${sender}`;
+            messageBubble.className = `chat-bubble ${sender}`;
+            messageBubble.textContent = text;
+
+            messageContainer.appendChild(messageBubble);
+            chatBox.appendChild(messageContainer);
         }
     </script>
 </body>
