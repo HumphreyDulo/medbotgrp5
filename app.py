@@ -3,6 +3,10 @@ from flask import Flask, render_template, request, jsonify
 import joblib
 import re
 import tensorflow as tf
+import difflib
+from spellchecker import SpellChecker
+
+
 
 app = Flask(__name__)
 
@@ -14,6 +18,9 @@ label_encoder_path = os.path.join('models', 'label_encoder.pkl')
 classifier = tf.keras.models.load_model(model_path)
 vectorizer = joblib.load(vectorizer_path)
 label_encoder = joblib.load(label_encoder_path)
+
+# Initialize the spell checker
+spell = SpellChecker()
 
 # Disease symptoms dictionary
 disease_symptoms = {
@@ -50,10 +57,25 @@ def clean_text(text):
     return text
 
 
+def correct_spelling(text):
+    corrected_words = [spell.correction(word) for word in text.split()]
+    return ' '.join(corrected_words)
+
 def get_disease_from_question(question):
+    # Correct spelling errors
+    question = correct_spelling(question)
+
+    # Clean and split the question for better matching
+    question = clean_text(question)
+    
     for disease in disease_symptoms.keys():
-        if disease.lower() in question.lower():
+        if disease.lower() in question:
             return disease
+
+    # Check for close matches if no exact match is found
+    possible_matches = difflib.get_close_matches(question, disease_symptoms.keys(), n=1, cutoff=0.7)
+    if possible_matches:
+        return possible_matches[0]
     return None
 
 
@@ -68,7 +90,7 @@ def predict():
     cleaned_text = clean_text(symptom_description)
 
     # Check if the user is asking for other symptoms of a specific disease
-    if 'other symptoms of' in cleaned_text:
+    if 'other symptoms' in cleaned_text:
         disease_name = cleaned_text.split('other symptoms of')[-1].strip()
         mentioned_symptoms = [symptom.strip() for symptom in re.split(r' and |,', symptom_description.lower())]
         other_symptoms = disease_symptoms.get(disease_name.title(), [])
@@ -80,7 +102,7 @@ def predict():
         return jsonify({'response': response})
 
     # Check if the user is asking for symptoms of a specific disease
-    if 'symptoms of' in cleaned_text:
+    if 'symptoms' in cleaned_text:
         disease_name = cleaned_text.split('symptoms of')[-1].strip()
         other_symptoms = disease_symptoms.get(disease_name.title(), [])
         if other_symptoms:
@@ -91,9 +113,10 @@ def predict():
 
     # Check if the user input matches a known disease directly
     disease_name = cleaned_text.strip().title()
-    if disease_name in disease_symptoms:
-        other_symptoms = disease_symptoms.get(disease_name, [])
-        response = f"{disease_name} is typically associated with the following symptoms: {', '.join(other_symptoms)}."
+    disease = get_disease_from_question(disease_name)
+    if disease:
+        other_symptoms = disease_symptoms[disease]
+        response = f"{disease} is typically associated with the following symptoms: {', '.join(other_symptoms)}."
         return jsonify({'response': response})
 
     # Predict the disease based on symptoms
