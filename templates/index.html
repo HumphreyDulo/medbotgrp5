@@ -8,11 +8,41 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
+            padding-top: 60px; /* Adjust this value to match the navbar height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .navbar {
+            width: 100%;
+            background-color: #e0f7fa;
+            padding: 10px 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            height: 60px; /* Adjust height as needed */
+        }
+        .navbar .title {
+            font-weight: bold;
+            font-size: 1.5em;
+            color: #007bff;
+        }
+        .navbar .reload-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
         }
         .chat-container {
             width: 100%;
@@ -23,6 +53,8 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            margin-top: 20px;
+            min-height: 100px; /* Minimum height to prevent it from being too large when empty */
         }
         .chat-box {
             flex: 1;
@@ -76,6 +108,10 @@
     </style>
 </head>
 <body>
+    <div class="navbar">
+        <div class="title">Medichat</div>
+        <button class="reload-btn" onclick="location.reload()">Reload</button>
+    </div>
     <div class="chat-container">
         <div class="chat-box" id="chat-box"></div>
         <div class="input-box">
